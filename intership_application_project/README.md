@@ -7,12 +7,18 @@ This Python program uses Playwright to automate fetching the previous trading da
 - Git
 
 # Setup
-1. Clone the repo
+1. Clone the Repository
+   ```bash
    git clone https://github.com/jorgencarbajal/Personal_Projects.git
    cd Personal_Projects/intership_application_project
-
-   (or copy and paste)
-
-3. Install Dependencies
+   ```
+2. Install Dependencies
+   ```bash
    pip install playwright
    playwright install
+   ```
+   
+3. Run the Script
+   ```bash
+   python get_stock_price.py
+   ```
