@@ -1,4 +1,4 @@
-# SPY Closing Price Automation
+## SPY Closing Price Automation
 
 This Python program uses Playwright to automate fetching the previous trading day's closing price for the SPY ETF from Yahoo Finance.
 
@@ -22,3 +22,4 @@ This Python program uses Playwright to automate fetching the previous trading da
    ```bash
    python get_stock_price.py
    ```
+#
