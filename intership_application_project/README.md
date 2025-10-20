@@ -2,14 +2,17 @@
 
 This Python program uses Playwright to automate fetching the previous trading day's closing price for the SPY ETF from Yahoo Finance.
 
-## Prerequisites
-- **Python**: 3.7+ (check with `python --version` or `python3 --version`).
-- **Git**: Installed (check with `git --version`). Download from [git-scm.com](https://git-scm.com).
-- Internet connection for browser automation.
-- Compatibility: Windows, macOS, or Linux.
+# Prerequisites
+- Python: 3.7+
+- Git
 
-## Setup
-1. **Clone the Repository**
-   ```bash
+# Setup
+1. Clone the repo
    git clone https://github.com/jorgencarbajal/Personal_Projects.git
    cd Personal_Projects/intership_application_project
+
+   (or copy and paste)
+
+3. Install Dependencies
+   pip install playwright
+   playwright install
