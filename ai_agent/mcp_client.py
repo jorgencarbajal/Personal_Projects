@@ -79,3 +79,8 @@ def parse_mcp_response(response):
         return response["result"]
     print("Error: Invalid MCP response")
     return None
+
+def browser_type(ref, element, text):
+    # Send text input action to MCP server for element with given ref and description
+    params = {"ref": ref, "element": element, "text": text}
+    return send_mcp_request("browser_type", params)
