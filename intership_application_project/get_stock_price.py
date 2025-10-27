@@ -41,6 +41,7 @@ def fetch_spy_close():
             # quote-statistics-container is a class, allowing your program to locate specific parts of 
             # the page.
             container_selector = 'section.quote-statistics-container'
+            
             # Variable page calls wait_for_selector to wait up to 30 seconds (timeout=30000) for the 
             # element matching container_selector to become visible (state="visible") on the page, raising 
             # a TimeoutError if not found or visible within that time.
