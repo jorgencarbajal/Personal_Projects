@@ -23,7 +23,7 @@ def start_mcp_server(port=8931):
 
 def launch_browser():
     playwright = sync_playwright().start()
-    browser = playwright.chromium.launch(headless=True)
+    browser = playwright.chromium.launch(headless=False)
     context = browser.new_context(
         viewport={"width": 1366, "height": 900},
         locale="en-US",
