@@ -6,8 +6,14 @@ from mcp_client import browser_navigate, browser_snapshot, browser_click, browse
 from llm_agent import query_llm
 
 def start_mcp_server(port=8931):
+    # Use npm exec (works on Windows, avoids npx.ps1)
+    import shutil
+    npm = shutil.which("npm")
+    if not npm:
+        raise RuntimeError("npm not found. Verify Node.js installation.")
+    
     process = subprocess.Popen(
-        ["npx", "@playwright/mcp@latest", "--port", str(port)],
+        [npm, "exec", "--", "@playwright/mcp@latest", "--port", str(port)],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )

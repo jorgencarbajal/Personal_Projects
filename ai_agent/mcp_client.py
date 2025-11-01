@@ -29,6 +29,7 @@ def send_mcp_request(method, params=None):
         # interact with web servers or APIs. It simplifies sending requests and handling responses compared 
         # to lower-level methods.
     payload = {"method": method, "params": params or {}}
+    headers = {"Content-Type": "application/json", "Accept": "application/json"}  # ADD THIS LINE
 
     try:
         # The response = requests.post(url, json=payload) line sends an HTTP POST request to the specified 
@@ -37,7 +38,7 @@ def send_mcp_request(method, params=None):
             # responses, while the result is a response object containing the server’s reply, including 
             # status and data. JSON encoding converts the payload dictionary into a JSON-formatted string 
             # for data exchange with the server.
-        response = requests.post(url, json=payload)
+        response = requests.post(url, json=payload, headers=headers)  # ADD headers
 
         # Variable response.raise_for_status() checks the HTTP status code of the response object and raises 
             # an exception (e.g., requests.HTTPError) if the request failed (e.g., 404 or 500), ensuring the 
