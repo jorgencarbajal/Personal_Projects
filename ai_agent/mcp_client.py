@@ -10,53 +10,107 @@ import json      # Handles parsing and formatting JSON data for MCP requests and
 
 # method represents the actions that the client tells the mcp server what to do
 # method: what to do; params: how to do it
-def send_mcp_request(method, params=None):
+# def send_mcp_request(method: str, params: dict | None=None):
 
-    # url now helps connect to the server
+#     # url now helps connect to the server
+#     url = "http://localhost:8931/mcp"
+
+#     # payload is essentially a map of all the methods and params
+#     payload = {"method": method}
+#     if params:
+#         payload["params"] = params
+#     # the data being sent out and what we expect in return
+#     #headers = {"Content-Type": "application/json", "Accept": "application/json"}
+
+#     try:
+#         # make a server request and get a reply
+#         #response = requests.post(url, json=payload, headers=headers)
+#         response = requests.post(
+#             url,
+#             json=payload,  # ← sends correct JSON + Content-Type
+#             headers={"Content-Type": "application/json", "Accept": "application/json"},
+#             timeout=10
+#         )
+
+#         # immediately turns HTTP errors (like 404, 500) into Python exceptions
+#         #response.raise_for_status()
+
+#         # response.json() sends back the data from the response object, parsed from JSON format 
+#             # into a Python dictionary or list, if the request was successful.
+#         return parse_mcp_response(response.json())
+    
+#     except requests.RequestException as e:
+#         print(f"MCP request (ahh shet) failed: {e}")
+#         return None
+
+
+def send_mcp_request(method: str, params: dict | None = None):
     url = "http://localhost:8931/mcp"
-
-    # payload is essentially a map of all the methods and params
-    payload = {"method": method, "params": params or {}}
-    # the data being sent out and what we expect in return
-    headers = {"Content-Type": "application/json", "Accept": "application/json"}
-
+    payload = {
+        "jsonrpc": "2.0",          # REQUIRED
+        "method": method,
+        "params": params or {},
+        "id": 1                    # REQUIRED
+    }
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json, text/event-stream"
+    }
+    print("\n=== MCP REQUEST DEBUG ===")
+    print(f"URL: {url}")
+    print(f"Payload: {payload}")   # Now shows jsonrpc and id
+    print(f"Headers: {headers}")
     try:
-        # make a server request and get a reply
-        response = requests.post(url, json=payload, headers=headers)
+        response = requests.post(url, json=payload, headers=headers, timeout=10)
+        print(f"Status: {response.status_code}")
+        print(f"Response Body: {response.text[:500]}")
+        print("=======================\n")
 
-        # Variable response.raise_for_status() checks the HTTP status code of the response object and raises 
-            # an exception (e.g., requests.HTTPError) if the request failed (e.g., 404 or 500), ensuring the 
-            # program handles errors appropriately.
         response.raise_for_status()
+        data = response.json()
+        return parse_mcp_response(data)
 
-        # Variable return response.json() sends back the data from the response object, parsed from JSON format 
-            # into a Python dictionary or list, if the request was successful.
-        return parse_mcp_response(response.json())
-    
-    except requests.RequestException as e:
-        print(f"MCP request failed: {e}")
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP ERROR: {e}")
         return None
+    except json.JSONDecodeError:
+        print("NOT JSON RESPONSE")
+        return None
+    except Exception as e:
+        print(f"Request failed: {e}")
+        return None
+
+
     
+# def browser_snapshot():
+#     # Request current page snapshot from MCP server
+#     return send_mcp_request("browser_snapshot")
 def browser_snapshot():
-    # Request current page snapshot from MCP server
-    return send_mcp_request("browser_snapshot")
+    print("[MCP] Requesting snapshot...")
+    result = send_mcp_request("browser_snapshot")
+    if result is None:
+        print("[MCP] FAILED to get snapshot")
+    else:
+        print(f"[MCP] Got snapshot with {len(result.get('elements', []))} elements")
+    return result
     
-# Variable def browser_click(ref, element): defines a function named browser_click that takes two 
-    # parameters, ref (likely a reference to a page or context) and element (the element to click), to 
-    # encapsulate browser clicking logic.
 def browser_click(ref, element):
-
     # Send click action to MCP server for element with given ref and description
-    # Variable params is assigned a dictionary with keys "ref" and "element", set to the values of 
-        # ref and element respectively, structuring them as data to be passed in a request or operation.
     params = {"ref": ref, "element": element}
-
     return send_mcp_request("browser_click", params)
 
-def browser_navigate(url):
-    # Navigate to specified URL via MCP server
-    params = {"url": url}
-    return send_mcp_request("browser_navigate", params)
+# def browser_navigate(url):
+#     # Navigate to specified URL via MCP server
+#     params = {"url": url}
+#     return send_mcp_request("browser_navigate", params)
+def browser_navigate(url: str):
+    print(f"[MCP] Navigating to: {url}")
+    result = send_mcp_request("browser_navigate", {"url": url})
+    if result is None:
+        print(f"[MCP] FAILED to navigate to {url}")
+    else:
+        print(f"[MCP] SUCCESS: Navigated to {url}")
+    return result
 
 def browser_type(ref, element, text):
     # Send text input action to MCP server for element with given ref and description
