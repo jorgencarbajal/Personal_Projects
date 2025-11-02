@@ -123,3 +123,12 @@ def parse_mcp_response(response):
         return response["result"]
     print("Error: Invalid MCP response")
     return None
+
+def initialize_mcp():
+    print("[MCP] Initializing server...")
+    result = send_mcp_request("initialize", {"capabilities": {}})
+    if result is None:
+        print("[MCP] FAILED to initialize")
+    else:
+        print("[MCP] Server initialized successfully")
+    return result
