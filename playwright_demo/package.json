@@ -1,0 +1,19 @@
+{
+  "name": "playwright_demo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.20.2",
+    "@playwright/mcp": "^0.0.45",
+    "@playwright/test": "^1.56.1",
+    "playwright": "^1.56.1"
+  }
+}
