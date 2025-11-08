@@ -1,0 +1,8 @@
+# Python dependencies for playwright_demo project
+# MCP client dependencies
+requests>=2.31.0
+
+# If you need additional packages, add them here
+# Example:
+# playwright>=1.40.0  # if you use playwright from Python
+# python-dotenv>=1.0.0  # if you use .env files

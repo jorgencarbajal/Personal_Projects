@@ -29,29 +29,35 @@
 # only work in this environement, all the pip installs go here...
 - activate environement: .\python_client\Scripts\Activate.ps1
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 STEPS
 
-PHASE_1:
+%%%%%%%%%%%%%%%%%%%%%%%%%%% PHASE 1 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 ✅ Set up Node.js project with npm init -y
   - Node.js is a javascript runtime environment, lets you run javascript code outside of a web browser. I guess normally only able to run on browser???
   - MCP server is written in JavaScript. "@playwright/mcp", Node.js needed to run on computer
-  - Start server: "node server.js"
   - When you run `npm install`, npm looks at `package.json` and downloads ALL the packages listed in `dependencies`.
   - 
 ✅ Installed core packages: @modelcontextprotocol/sdk, playwright, @playwright/test
 ✅ Installed Playwright MCP Server: @playwright/mcp
 ✅ Initialized Playwright browsers: npx playwright install
 
-PHASE_2:
+%%%%%%%%%%%%%%%%%%%%%%%%%%% PHASE 2 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 ✅ Started MCP server: node [cli.js](http://_vscodecontentref_/0) --port 3000
 ✅ Server responded with connection info and config example
+  - Start server: "npx @playwright/mcp"
+  - The command node cli.js --port 3000 starts the MCP server, where node is the Node.js runtime that executes JavaScript files, cli.js is the server's entry point file located in node_modules/@playwright/mcp/cli.js, and --port 3000 specifies which port (communication channel) the server listens on. The server creates an HTTP web server using Express that exposes two endpoints: /mcp and /sse, both handling MCP protocol requests in Server-Sent Events (SSE) format. When running, the server stays active in memory (~60MB), constantly listening on port 3000 for incoming requests from your Python client, translating those requests into Playwright browser commands, and sending responses back. The correct way to start it is npx @playwright/mcp --port 3000 (not just node cli.js) because npx automatically finds the package in node_modules and runs it. The server runs continuously until stopped with Ctrl+C, and while idle it uses minimal CPU, responding instantly when requests arrive.
 
-PHASE_3:
+%%%%%%%%%%%%%%%%%%%%%%%%%%% PHASE 3 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 ✅ Created Python virtual environment: python -m venv python_client
 ✅ Activated environment: Activate.ps1
 ✅ Installed Python packages: pip install requests httpx asyncio python-dotenv openai
+  - Virtual environments (venvs) are Python's way of creating isolated package installation spaces for each project, preventing dependency conflicts and system-wide clutter. The command python -m venv python_client creates a new folder called python_client containing its own copy of Python, pip, and a Lib/site-packages/ directory where all packages get installed. Running .\python_client\Scripts\Activate.ps1 activates the venv by temporarily modifying your system's PATH environment variable so that python and pip commands point to the venv's versions instead of the system Python - you'll see (python_client) appear in your terminal prompt when activated. After activation, pip install requests httpx python-dotenv openai installs packages locally to the venv's site-packages folder rather than polluting the global system Python. Unlike Python which requires manual venv creation, Node.js automatically isolates packages in project-specific node_modules/ folders, making it less prone to clutter. The golden rule: always create a venv before any pip install, always activate before installing packages (look for the venv name in your prompt), and always add venv/ to .gitignore since dependencies are recreatable from requirements.txt. This prevents the system Python from becoming cluttered with dozens of packages from different projects (like the 87 packages currently in your system Python from past trading/scraping projects).
+
 
 PHASE_4: 
 First Connection Attempts (FAILED)
