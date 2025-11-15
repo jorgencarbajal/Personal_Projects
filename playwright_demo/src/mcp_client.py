@@ -1,10 +1,20 @@
 """
 MCP Client using session ID from initial connection
+
+This script creates a Python client that connects to your MCP server (running on localhost:3000) and establishes a persistent session with it. It handles the MCP initialization handshake, manages session IDs so the server knows who you are across multiple requests, and provides methods to send tool calls (like Playwright browser commands) to the server. Essentially, it's the bridge between your Python code and the Playwright MCP server—it manages the conversation protocol, tracks request IDs, parses responses, and keeps you authenticated throughout the interaction.
+
 """
+# libary for making HTTP requests, (GET, POST, PUT, DELETE, etc.), to web servers
+# using this to send JSON-RPC messages to MCP server (python programs talking to mcp servers)
 import requests
+
+# conversion between Pyton objects and json (a text format for data)
+# used to parse the the servers responses and format outgoing requests
 import json
 
 class SessionMCPClient:
+
+    # set up client with the server url. initialize empty session id and requests id counter
     def __init__(self, base_url="http://localhost:3000"):
         self.base_url = base_url
         self.mcp_url = f"{base_url}/mcp"
@@ -13,10 +23,12 @@ class SessionMCPClient:
         self.session_id = None
         self.request_id = 1
     
+    # increments and returns the next request id (used to track which response belongs to which request in the JSON-RPC protocol)
     def get_next_id(self):
         self.request_id += 1
         return self.request_id
     
+    # extracts and converts the sse (server sent events) formatted text response from the server into a python dictionary
     def parse_sse_response(self, response_text):
         """Parse Server-Sent Events format response"""
         lines = response_text.strip().split('\n')
@@ -29,6 +41,7 @@ class SessionMCPClient:
                 return None
         return None
     
+    # sends initialization handshake to the server and captures the session id from the response header
     def establish_session(self):
         """First establish a session via MCP endpoint"""
         print("=== Establishing Session ===")
@@ -74,6 +87,7 @@ class SessionMCPClient:
             print(f"Session establishment failed: {e}")
             return False
     
+    # builds json-rpc request payload, include the session id, and posts it to the server, then handles and prints reponses
     def send_with_session(self, method, params=None, is_notification=False, use_sse=False):
         """Send request with session ID"""
         payload = {
@@ -129,6 +143,7 @@ class SessionMCPClient:
             print(f"Request failed: {e}")
             return None
     
+    # orchastrates the full setup process be establishing a session, sending initialization notifications, and testing tools/list to confirm everything works
     def complete_initialization(self):
         """Complete the full MCP initialization"""
         print("\n=== Complete MCP Initialization ===")
@@ -171,6 +186,7 @@ class SessionMCPClient:
         print("❌ Tools/list failed on both endpoints")
         return False
     
+    # a convenience wrapper that formats a tool call (like a playwright command) and sends it via "send_with_session"
     def send_tool_call(self, tool_name, parameters=None):
         """Send a tool call (tools/call method)"""
         if not self.session_id:
