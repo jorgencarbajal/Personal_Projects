@@ -20,11 +20,16 @@ class SessionMCPClient:
     # self refers to the instance being created
     # base_url defined and initailized in this parameter list
     def __init__(self, base_url="http://localhost:3000"):
+        # create variable for the url
         self.base_url = base_url
+        # creates url's of the endpoints
         self.mcp_url = f"{base_url}/mcp"
         self.sse_url = f"{base_url}/sse"
+        # creating a persistent HTTP session that remembers things across multiple requests—cookies, connection pooling, headers you've set before
         self.session = requests.Session()
+        # Initializes session ID as empty; gets filled in once you establish the connection
         self.session_id = None
+        # request counte needed for JSON-RPC protocol, when you send a request with an ID, the server includes that same ID in its response so you know which response matches which request
         self.request_id = 1
     
     # increments and returns the next request id (used to track which response belongs to which request in the JSON-RPC protocol)
@@ -35,12 +40,18 @@ class SessionMCPClient:
     # extracts and converts the sse (server sent events) formatted text response from the server into a python dictionary
     def parse_sse_response(self, response_text):
         """Parse Server-Sent Events format response"""
+        # organizes the response into newlines starting with "data". converting the SSE-formatted text into clean JSON that Python's json library can actually understand and convert into a usable dictionary
         lines = response_text.strip().split('\n')
+        # list comprehension... further parses the data into lines that start with 'data:'. 'line' is like variable in the auto for loop c++
         data_lines = [line for line in lines if line.startswith('data: ')]
+        # check if data_lines has any items
         if data_lines:
+            # starting with the last item in the list, '-1', and skipping the first 6 characters '[6:]' removing data prefix, 
             json_str = data_lines[-1][6:]
             try:
+                # tries to convert the json string into pyton dictionary, json is a module/library for handling json data, load s is a function "load string"
                 return json.loads(json_str)
+            # if json.loads() fails this exception is thrown
             except json.JSONDecodeError:
                 return None
         return None
@@ -50,13 +61,22 @@ class SessionMCPClient:
         """First establish a session via MCP endpoint"""
         print("=== Establishing Session ===")
         
+        # creates a json-rpc request dictionary
+        # In plain English: You're saying to the server: "Hi, I'm a Python client version 1.0.0 that speaks MCP 2024-11-05. Please initialize our connection.
         payload = {
+            # json protocol
             "jsonrpc": "2.0",
+            # a unique request id
             "id": self.get_next_id(),
+            # telling the server what method/action to perform
             "method": "initialize",
+            # arguments for the initialize method, nested dictionary
             "params": {
+                # version of the mcp protocol
                 "protocolVersion": "2024-11-05",
+                # special features the client supports
                 "capabilities": {},
+                # client info
                 "clientInfo": {
                     "name": "python-session-client",
                     "version": "1.0.0"
@@ -64,29 +84,36 @@ class SessionMCPClient:
             }
         }
         
+        # creates an HTTP headers dicitonary the tells the server what kind of data youre sending and what your willing to recieve
         headers = {
             "Content-Type": "application/json",
             "Accept": "application/json, text/event-stream"
         }
         
         try:
+            # send request and recieve response and store in response
+            # for the mcp protocol the initialization happens on the mcp endpoint
             response = self.session.post(self.mcp_url, json=payload, headers=headers)
+            # checks the status code
             print(f"Initialize status: {response.status_code}")
             
             if response.status_code == 200:
                 # Extract session ID
+                # response.headers is a dictionary like object in all HTTP responses containing metadata headers sent by the server. Here we are checking if the server included 'mcp-session-id as a header
                 if 'mcp-session-id' in response.headers:
+                    # extracting that specific header value
                     self.session_id = response.headers['mcp-session-id']
                     print(f"✅ Session established: {self.session_id}")
                     
                     parsed_data = self.parse_sse_response(response.text)
                     if parsed_data:
+                        # Does the opposite of 'json.loads', this takes a python dictionary and converts it back to json string for printing. 'indent=2' makes it nice and cute
                         print(f"Initialize response: {json.dumps(parsed_data, indent=2)}")
                         return True
-            
+            # got response but something is missing...
             print("❌ Failed to establish session")
             return False
-            
+        # this is thrown when something went wrong before we get reponse  
         except Exception as e:
             print(f"Session establishment failed: {e}")
             return False
@@ -94,14 +121,17 @@ class SessionMCPClient:
     # builds json-rpc request payload, include the session id, and posts it to the server, then handles and prints reponses
     def send_with_session(self, method, params=None, is_notification=False, use_sse=False):
         """Send request with session ID"""
+        # sets the payload
         payload = {
             "jsonrpc": "2.0",
             "method": method
         }
         
+        # Is this a response or a notification? If notification, skip, else creat and set the session id for the payload
         if not is_notification:
             payload["id"] = self.get_next_id()
-            
+        
+        # if there are parameters add them
         if params:
             payload["params"] = params
         
@@ -152,7 +182,7 @@ class SessionMCPClient:
         """Complete the full MCP initialization"""
         print("\n=== Complete MCP Initialization ===")
         
-        # Step 1: Establish session
+        # Step 1: 'establich_session' returns true or false if the session was established
         if not self.establish_session():
             return False
         
