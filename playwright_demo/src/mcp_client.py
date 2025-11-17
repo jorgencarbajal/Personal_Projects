@@ -12,9 +12,13 @@ import requests
 # used to parse the the servers responses and format outgoing requests
 import json
 
+# the client object... everything in one place
 class SessionMCPClient:
 
     # set up client with the server url. initialize empty session id and requests id counter
+    # __init__ is Python's special constructor method—it automatically runs whenever you create a new instance of the class
+    # self refers to the instance being created
+    # base_url defined and initailized in this parameter list
     def __init__(self, base_url="http://localhost:3000"):
         self.base_url = base_url
         self.mcp_url = f"{base_url}/mcp"
