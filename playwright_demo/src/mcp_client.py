@@ -29,7 +29,7 @@ class SessionMCPClient:
         self.session = requests.Session()
         # Initializes session ID as empty; gets filled in once you establish the connection
         self.session_id = None
-        # request counte needed for JSON-RPC protocol, when you send a request with an ID, the server includes that same ID in its response so you know which response matches which request
+        # request counter needed for JSON-RPC protocol, when you send a request with an ID, the server includes that same ID in its response so you know which response matches which request
         self.request_id = 1
     
     # increments and returns the next request id (used to track which response belongs to which request in the JSON-RPC protocol)
@@ -127,7 +127,7 @@ class SessionMCPClient:
             "method": method
         }
         
-        # Is this a response or a notification? If notification, skip, else creat and set the session id for the payload
+        # If this is not a notification set the session ID into payload
         if not is_notification:
             payload["id"] = self.get_next_id()
         
@@ -135,41 +135,55 @@ class SessionMCPClient:
         if params:
             payload["params"] = params
         
-        # Add session ID for SSE endpoint
+        # Add session ID for SSE endpoint, for sse endpoint session id goes in the payload body as compared into the header for mcp endpoint
+        # dont forget mcp and sse are essentially two doors to the same building. mcp(intialization/requests); sse(streaming/notifications)
         if use_sse and self.session_id:
             payload["sessionId"] = self.session_id
         
+        # create headers to tell the server what format were sending and what formats we can accept back
         headers = {
             "Content-Type": "application/json",
             "Accept": "application/json, text/event-stream"
         }
         
-        # Add session ID to headers if we have it
+        # If the session exists add session ID to headers if we have it
         if self.session_id:
             headers["mcp-session-id"] = self.session_id
         
+        # determine which endpoint to use (SSE or MCP)
         endpoint = self.sse_url if use_sse else self.mcp_url
+        # sets enpoint name to sse or mcp for later print use
         endpoint_name = "SSE" if use_sse else "MCP"
         
         try:
+            # send a post request and store the response in 'response'
             response = self.session.post(endpoint, json=payload, headers=headers)
             print(f"{endpoint_name} Method: {method} {'(notification)' if is_notification else ''}")
             print(f"Status: {response.status_code}")
             
+            # HTTP status code 200 means 'OK'
             if response.status_code == 200:
+                # Parse the response text as SSE format into a dictionary
                 parsed_data = self.parse_sse_response(response.text)
+                # If parsing succeeded, print and return the data
                 if parsed_data:
+                    # json.dumps() converts the dictionary to a formatted JSON string for printing
                     print(f"Response: {json.dumps(parsed_data, indent=2)}")
                     return parsed_data
+                # if parsing failed (response wasn't valid SSE format)
                 else:
                     print(f"Raw response: {response.text}")
                     return {"success": True}
+            # Status code is not 200 (error response)
             else:
                 try:
+                    # try to parse the error response as JSON into a dictionary
                     error_data = json.loads(response.text)
+                    # Convert the dictionary to a formatted JSON string for printing
                     print(f"Error: {json.dumps(error_data, indent=2)}")
                     return error_data
                 except:
+                    # If error response isn't valid JSON, print it as raw text
                     print(f"Error response: {response.text}")
             
             return None

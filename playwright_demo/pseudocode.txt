@@ -1,0 +1,105 @@
+MCP_CLIENT
+
+    FUNCTION establish_session():
+        PRINT "=== Establishing Session ==="
+        
+        CREATE payload dictionary with:
+            - jsonrpc version
+            - unique request ID
+            - method name "initialize"
+            - protocol version, capabilities, client info
+        
+        CREATE headers dictionary with:
+            - Content-Type: application/json
+            - Accept: application/json, text/event-stream
+        
+        TRY:
+            SEND HTTP POST request to MCP endpoint with payload and headers
+            STORE response
+            
+            PRINT response status code
+            
+            IF response status code equals 200:
+                IF 'mcp-session-id' exists in response headers:
+                    EXTRACT session ID from headers
+                    STORE session ID in self.session_id
+                    PRINT success message with session ID
+                    
+                    PARSE response body as SSE format
+                    STORE parsed data
+                    
+                    IF parsed data exists:
+                        PRINT formatted response
+                        RETURN True
+            
+            PRINT "Failed to establish session"
+            RETURN False
+        
+        CATCH any exception:
+            PRINT error message
+            RETURN False
+
+    FUNCTION send_with_session(method, params=None, is_notification=False, use_sse=False):
+    
+        CREATE payload dictionary with:
+            - jsonrpc: "2.0"
+            - method: (the method name passed in)
+        
+        IF this is NOT a notification:
+            ADD unique request ID to payload
+        
+        IF params were provided:
+            ADD params to payload
+        
+        IF using SSE endpoint AND session ID exists:
+            ADD sessionId to payload
+        
+        CREATE headers dictionary with:
+            - Content-Type: application/json
+            - Accept: application/json, text/event-stream
+        
+        IF session ID exists:
+            ADD mcp-session-id to headers
+        
+        DETERMINE endpoint:
+            IF use_sse is True:
+                SET endpoint to SSE URL
+                SET endpoint_name to "SSE"
+            ELSE:
+                SET endpoint to MCP URL
+                SET endpoint_name to "MCP"
+        
+        TRY:
+            SEND HTTP POST request to endpoint with payload and headers
+            STORE response
+            
+            PRINT endpoint name, method, and notification status
+            PRINT response status code
+            
+            IF response status code equals 200:
+                PARSE response as SSE format
+                
+                IF parsed data exists:
+                    PRINT formatted response
+                    RETURN parsed data
+                ELSE:
+                    PRINT raw response
+                    RETURN {"success": True}
+            
+            ELSE (status not 200):
+                TRY to parse response as JSON error:
+                    PRINT error
+                    RETURN error data
+                CATCH parsing error:
+                    PRINT raw error response
+            
+            RETURN None
+        
+        CATCH any exception:
+            PRINT error message
+            RETURN None
+
+
+
+
+
