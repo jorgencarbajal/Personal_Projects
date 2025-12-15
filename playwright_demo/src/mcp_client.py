@@ -118,7 +118,7 @@ class SessionMCPClient:
             print(f"Session establishment failed: {e}")
             return False
     
-    # builds json-rpc request payload, include the session id, and posts it to the server, then handles and prints reponses
+    # general purpose communication function for sending any request to the server while maintaining the session
     def send_with_session(self, method, params=None, is_notification=False, use_sse=False):
         """Send request with session ID"""
         # sets the payload
@@ -146,7 +146,7 @@ class SessionMCPClient:
             "Accept": "application/json, text/event-stream"
         }
         
-        # If the session exists add session ID to headers if we have it
+        # if the session id exist creat a dictionary entry called ... and link it with the session id
         if self.session_id:
             headers["mcp-session-id"] = self.session_id
         
@@ -196,11 +196,11 @@ class SessionMCPClient:
         """Complete the full MCP initialization"""
         print("\n=== Complete MCP Initialization ===")
         
-        # Step 1: 'establich_session' returns true or false if the session was established
+        # ensure the session was established
         if not self.establish_session():
             return False
         
-        # Step 2: Try initialized notification with session
+        # passing initialized as the 'method' parameter, initialized is a common handler with playwright mcp
         print("\n2. Send initialized notification (MCP endpoint):")
         notification_result = self.send_with_session("initialized", is_notification=True, use_sse=False)
         
