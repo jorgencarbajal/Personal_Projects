@@ -215,11 +215,14 @@ class SessionMCPClient:
             
             if not sse_notification or sse_notification.get("error"):
                 print("❌ Initialized notification failed on both endpoints")
+            else:
+                print("✅ initialized notification successful (SSE)")
         
-        # Step 3: Test tools/list on both endpoints
+        # testing to ensure the tools are accessible
         print("\n3. Test tools/list (MCP endpoint):")
         tools_result = self.send_with_session("tools/list", use_sse=False)
         
+        # confirmation
         if tools_result and not tools_result.get("error"):
             print("🎉 SUCCESS! Tools working via MCP endpoint!")
             return True
@@ -237,10 +240,13 @@ class SessionMCPClient:
     # a convenience wrapper that formats a tool call (like a playwright command) and sends it via "send_with_session"
     def send_tool_call(self, tool_name, parameters=None):
         """Send a tool call (tools/call method)"""
+
+        # ensure there is an active session
         if not self.session_id:
             print("❌ No active session. Initialize first.")
             return None
         
+        # initialize the tool that was passed
         params = {
             "name": tool_name
         }
