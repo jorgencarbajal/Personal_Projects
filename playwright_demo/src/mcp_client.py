@@ -2,7 +2,6 @@
 MCP Client using session ID from initial connection
 
 This script creates a Python client that connects to your MCP server (running on localhost:3000) and establishes a persistent session with it. It handles the MCP initialization handshake, manages session IDs so the server knows who you are across multiple requests, and provides methods to send tool calls (like Playwright browser commands) to the server. Essentially, it's the bridge between your Python code and the Playwright MCP server—it manages the conversation protocol, tracks request IDs, parses responses, and keeps you authenticated throughout the interaction.
-
 """
 # libary for making HTTP requests, (GET, POST, PUT, DELETE, etc.), to web servers
 # using this to send JSON-RPC messages to MCP server (python programs talking to mcp servers)
@@ -12,13 +11,25 @@ import requests
 # used to parse the the servers responses and format outgoing requests
 import json
 
-# the client object... everything in one place
+"""
+SessionMCPClient manages communication with the MCP server and maintains session state.
+
+Key responsibilities:
+- __init__: Constructor that initializes the client with server URLs, session object, and ID tracking
+- get_next_id: Generates unique request IDs to match responses with requests
+- parse_sse_response: Converts Server-Sent Events formatted text responses into Python dictionaries
+- establish_session: Initiates the connection with the server and retrieves the session ID
+- send_with_session: General-purpose method that sends any JSON-RPC (JavaScript Object Notation Remote Procedure Call, calling functions remotely) request to the server while including the session ID
+- complete_initialization: Orchestrates the full initialization process (establish session, send initialized notification, test tools)
+- send_tool_call: Convenience wrapper that formats tool calls for the LLM to use when executing browser automation commands
+
+Essentially, this class handles all the protocol complexity so the LLM can simply call send_tool_call() without worrying about JSON-RPC, session management, or endpoint selection.
+"""
 class SessionMCPClient:
 
-    # set up client with the server url. initialize empty session id and requests id counter
-    # __init__ is Python's special constructor method—it automatically runs whenever you create a new instance of the class
-    # self refers to the instance being created
-    # base_url defined and initailized in this parameter list
+    """
+    __init__ initializes the SessionMCPClient with all necessary configuration and state. It sets up the server URLs (base, MCP endpoint, SSE endpoint), creates a persistent HTTP session for reusing connections, initializes the session_id as empty (to be filled when connecting to the server), and sets the request_id counter to 1 (incremented with each request to match responses). This constructor prepares the client to communicate with the MCP server but doesn't establish the actual connection yet.
+    """
     def __init__(self, base_url="http://localhost:3000"):
         # create variable for the url
         self.base_url = base_url
@@ -32,17 +43,21 @@ class SessionMCPClient:
         # request counter needed for JSON-RPC protocol, when you send a request with an ID, the server includes that same ID in its response so you know which response matches which request
         self.request_id = 1
     
-    # increments and returns the next request id (used to track which response belongs to which request in the JSON-RPC protocol)
+    """
+    increments and returns the next request id (used to track which response belongs to which request in the JSON-RPC protocol)
+    """
     def get_next_id(self):
         self.request_id += 1
         return self.request_id
     
-    # extracts and converts the sse (server sent events) formatted text response from the server into a python dictionary
+    """
+    parse_sse_response converts Server-Sent Events formatted text responses from the server into Python dictionaries. It splits the response text by newlines, filters for lines starting with 'data: ' (which contain the actual message), extracts the JSON portion by removing the 'data: ' prefix, and converts it to a Python dictionary using json.loads(). If parsing succeeds, it returns the dictionary; if parsing fails or no valid data lines are found, it returns None. This function handles the protocol overhead of SSE format so the rest of the code can work with clean Python objects. Keep in mind that all mcp responses whether from mcp or sse endpoints are formattes in sse.
+    """
     def parse_sse_response(self, response_text):
         """Parse Server-Sent Events format response"""
         # organizes the response into newlines starting with "data". converting the SSE-formatted text into clean JSON that Python's json library can actually understand and convert into a usable dictionary
         lines = response_text.strip().split('\n')
-        # list comprehension... further parses the data into lines that start with 'data:'. 'line' is like variable in the auto for loop c++
+        # list comprehension... further parses the data into lines that start with 'data:'. 'line' is like variable in the auto for loop c++ (usually there is only one line that starts with 'data')
         data_lines = [line for line in lines if line.startswith('data: ')]
         # check if data_lines has any items
         if data_lines:
@@ -56,7 +71,10 @@ class SessionMCPClient:
                 return None
         return None
     
-    # sends initialization handshake to the server and captures the session id from the response header
+    """
+    establish_session initiates the first handshake with the MCP server to obtain a session ID. It constructs a JSON-RPC initialize request identifying itself as a Python client supporting MCP protocol version 2024-11-05, then sends this via HTTP POST to the MCP endpoint with appropriate headers. If the response status is 200 (OK), it checks for the 'mcp-session-id' header in the response, extracts and stores this session ID for use in all future requests, parses the response body using parse_sse_response(), and returns True on success. If any step 
+    fails—missing session ID header, invalid response body, network error, or non-200 status code— it returns False and prints an error message. This is the critical first step that must complete before any other MCP operations can proceed.
+    """
     def establish_session(self):
         """First establish a session via MCP endpoint"""
         print("=== Establishing Session ===")
@@ -118,7 +136,9 @@ class SessionMCPClient:
             print(f"Session establishment failed: {e}")
             return False
     
-    # general purpose communication function for sending any request to the server while maintaining the session
+    """
+    send_with_session is the primary communication method for all interactions with the MCP server after session establishment. It constructs a JSON-RPC payload with the specified method and optional parameters, adds a unique request ID (unless it's a notification), and includes the session ID in either the payload body (for SSE endpoint) or headers (for MCP endpoint) depending on the use_sse flag. It then sends an HTTP POST request to the appropriate endpoint and handles the response. On successful responses (status 200), it parses the SSE-formatted response into a dictionary and returns it, or returns a success indicator if parsing fails. On error responses, it attempts to parse and return the error details, falling back to raw text if parsing fails. If a network exception occurs, it catches and reports it. This function abstracts away all protocol complexity—the LLM only needs to call this function with a method name and parameters, and it handles endpoint selection, session management, and response parsing automatically.
+    """
     def send_with_session(self, method, params=None, is_notification=False, use_sse=False):
         """Send request with session ID"""
         # sets the payload
