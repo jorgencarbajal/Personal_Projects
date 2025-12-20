@@ -211,7 +211,9 @@ class SessionMCPClient:
             print(f"Request failed: {e}")
             return None
     
-    # orchastrates the full setup process be establishing a session, sending initialization notifications, and testing tools/list to confirm everything works
+    """
+    complete_initialization orchestrates the full MCP initialization process in three steps. First, it calls establish_session() to obtain a session ID from the server—if this fails, the entire function returns False immediately. Second, it sends an "initialized" notification to inform the server that the client is ready, trying the MCP endpoint first and falling back to the SSE endpoint if needed. Third, it tests the "tools/list" method on both endpoints to verify that tool calls are accessible. The function returns True as soon as tools/list succeeds on either endpoint, confirming that the client is fully initialized and ready to make tool calls. If session establishment fails or tools/list fails on both endpoints, it returns False. This function serves as the initialization checklist—it ensures all necessary setup is complete and the client can communicate with the server before any actual browser automation begins.
+    """
     def complete_initialization(self):
         """Complete the full MCP initialization"""
         print("\n=== Complete MCP Initialization ===")
@@ -257,7 +259,9 @@ class SessionMCPClient:
         print("❌ Tools/list failed on both endpoints")
         return False
     
-    # a convenience wrapper that formats a tool call (like a playwright command) and sends it via "send_with_session"
+    """
+    send_tool_call is a convenience wrapper that formats and sends tool execution requests to the MCP server. It serves as the primary interface for the LLM to execute browser automation tools. First, it verifies that a session has been established—if not, it returns None and prompts initialization. It then constructs a parameters dictionary containing the tool name and any optional arguments passed in. Finally, it calls send_with_session() with the "tools/call" method, the formatted parameters, and the MCP endpoint. This function abstracts away the complexity of the underlying protocol, allowing the LLM to simply specify a tool name and its arguments without worrying about JSON-RPC formatting, session management, or endpoint selection. It's the bridge between the AI layer and the MCP communication layer.
+    """
     def send_tool_call(self, tool_name, parameters=None):
         """Send a tool call (tools/call method)"""
 
