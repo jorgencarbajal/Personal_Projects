@@ -14,8 +14,21 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from src.mcp_client import SessionMCPClient
+# functions for working with json data
 import json
 
+"""
+BrowserAutomator provides a high-level interface for browser automation tasks.
+
+Key responsibilities:
+- __init__: Constructor that creates a SessionMCPClient instance and tracks initialization state
+- initialize: Establishes the MCP connection by calling complete_initialization and sets the initialized flag
+- navigate_to_website: Directs the browser to a specified URL using the browser_navigate tool
+- take_page_snapshot: Captures an accessibility snapshot of the current page using the browser_snapshot tool
+- get_page_title: Retrieves the page title by executing JavaScript via the browser_evaluate tool
+
+Essentially, this class provides user-friendly methods that wrap the SessionMCPClient's send_tool_call() function, adding status checking, user feedback messages, and error handling for common browser automation tasks.
+"""
 class BrowserAutomator:
     def __init__(self):
         self.client = SessionMCPClient()
