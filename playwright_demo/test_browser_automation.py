@@ -1,8 +1,16 @@
 """
 Browser Automation Test - Using our working MCP client
 """
+# sys module gives access to system specific parameters and functions
 import sys
+# provides functions for interacting with the operating systems
 import os
+# '__file__' a special python variable that contains the path to the current script file
+# 'os.path.dirname(__file__)' gets the directory folder that contains the file
+# ''..'' go up one directory (parnet folder)
+# ' os.path.join()' combines path parts in a platform-safe way
+# 'sys.path': a list of directories where python looks for modules
+# '.append(): adds the new path to this list
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from src.mcp_client import SessionMCPClient
