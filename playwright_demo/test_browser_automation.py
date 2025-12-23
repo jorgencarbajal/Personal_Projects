@@ -30,10 +30,17 @@ Key responsibilities:
 Essentially, this class provides user-friendly methods that wrap the SessionMCPClient's send_tool_call() function, adding status checking, user feedback messages, and error handling for common browser automation tasks.
 """
 class BrowserAutomator:
+
+    """
+    Special constructor that runs when creating new instance of the class. It creates an instance variable names client and assigns it a new SessionMCPClient object. We then create and initialized variable and assign it to false which tracks whether the browser connection has been setup.
+    """
     def __init__(self):
         self.client = SessionMCPClient()
         self.initialized = False
     
+    """
+    We first start by calling the 'complete_initialization' method on the self.client and stores the return value (true/false) in the success variable. If success is true then return true if not return false.
+    """
     def initialize(self):
         """Initialize the MCP connection"""
         print("🔧 Initializing browser automation...")
