@@ -72,6 +72,9 @@ class BrowserAutomator:
             print(f"❌ Failed to navigate: {result}")
             return False
     
+    """
+    First we start by again ensuring that a session is initialized. We then call the 'browser_snapshot' tool with the send_tool_call function. Finally an if else statement that helps determine whether the screen capture was successfull or not. We return the dictionary if true or false if anything fails. As compared to the navigate function, this function actually returns a dictionary since the page_snapshot function will provide useful details for moving through the program.
+    """
     def take_page_snapshot(self):
         """Take an accessibility snapshot of the current page"""
         if not self.initialized:
