@@ -39,7 +39,7 @@ class BrowserAutomator:
         self.initialized = False
     
     """
-    We first start by calling the 'complete_initialization' method on the self.client and stores the return value (true/false) in the success variable. If success is true then return true if not return false.
+    This method initializes the mcp server by calling the method from the mcp_client file. First starts by calling the 'complete_initialization' method on the self.client and stores the return value (true/false) in the success variable. If success is true then set initialized to true and return true if not return false.
     """
     def initialize(self):
         """Initialize the MCP connection"""
@@ -53,6 +53,9 @@ class BrowserAutomator:
             print("❌ Failed to initialize browser automation")
             return False
     
+    """
+    First we ensure that the server/browser is initialized. We then call the 'send_tool_call' function that uses the browser_navigate tool to navigate to the appropriate website. This function ultimately returns a dictionary. We test to see if the dictionary exists and the 'error' key does not exist (or is falsy).
+    """
     def navigate_to_website(self, url):
         """Navigate to a specific website"""
         if not self.initialized:
