@@ -91,6 +91,10 @@ class BrowserAutomator:
             print(f"❌ Failed to capture snapshot: {result}")
             return None
     
+    """
+    Note: The reason we include 'self' is because when we call the function like this... client.get_page_title(), python automatically passes client as the first argument. Without self, we get an error.
+    A method that obtains the page title. 
+    """
     def get_page_title(self):
         """Get page title using JavaScript evaluation"""
         if not self.initialized:
