@@ -72,8 +72,7 @@ class SessionMCPClient:
         return None
     
     """
-    establish_session initiates the first handshake with the MCP server to obtain a session ID. It constructs a JSON-RPC initialize request identifying itself as a Python client supporting MCP protocol version 2024-11-05, then sends this via HTTP POST to the MCP endpoint with appropriate headers. If the response status is 200 (OK), it checks for the 'mcp-session-id' header in the response, extracts and stores this session ID for use in all future requests, parses the response body using parse_sse_response(), and returns True on success. If any step 
-    fails—missing session ID header, invalid response body, network error, or non-200 status code— it returns False and prints an error message. This is the critical first step that must complete before any other MCP operations can proceed.
+    establish_session initiates the first handshake with the MCP server to obtain a session ID. It constructs a JSON-RPC initialize request identifying itself as a Python client supporting MCP protocol version 2024-11-05, then sends this via HTTP POST to the MCP endpoint with appropriate headers. If the response status is 200 (OK), it checks for the 'mcp-session-id' header in the response, extracts and stores this session ID for use in all future requests, parses the response body using parse_sse_response(), and returns True on success. If any step fails—missing session ID header, invalid response body, network error, or non-200 status code— it returns False and prints an error message. This is the critical first step that must complete before any other MCP operations can proceed.
     """
     def establish_session(self):
         """First establish a session via MCP endpoint"""
