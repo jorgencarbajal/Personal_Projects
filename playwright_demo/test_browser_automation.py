@@ -92,8 +92,9 @@ class BrowserAutomator:
             return None
     
     """
-    Note: The reason we include 'self' is because when we call the function like this... client.get_page_title(), python automatically passes client as the first argument. Without self, we get an error.
-    A method that obtains the page title. 
+    Note: The reason we include 'self' is because when we call the function like this... client.get_page_title(), Python automatically passes client as the first argument. Without self, we get an error.
+
+    A method that obtains the page title by calling the browser_evaluate tool. The dictionary parameter {"function": "() => document.title"} contains JavaScript code that browser_evaluate executes in the browser to retrieve the page title. JavaScript code is required when using the browser_evaluate tool.
     """
     def get_page_title(self):
         """Get page title using JavaScript evaluation"""
@@ -103,11 +104,14 @@ class BrowserAutomator:
         
         print("📋 Getting page title...")
         
+        # result is a variable that stores the return value from the send_tool_call function, which returns a dictionary if successful. When send_tool_call is invoked, its arguments are "browser_evaluate" (a tool provided by the MCP server) and the dictionary {"function": "() => document.title"} (the parameters). The string "browser_evaluate" becomes the tool_name parameter, while the dictionary {"function": "() => document.title"} becomes the parameters argument, where "function" is the key expected by the browser_evaluate tool and "() => document.title" is the value - a JavaScript arrow function that retrieves the page title.
+        # browser_evaluate is a tool that executes javascript code. It specifically always needs a function parameter.
         result = self.client.send_tool_call("browser_evaluate", {
             "function": "() => document.title"
         })
         
         if result and not result.get("error"):
+            # Navigate the nested response structure (result->result) to extract the title. Use .get() with defaults as a safeguard if keys are missing.
             title = result.get("result", {}).get("result", "Unknown")
             print(f"✅ Page title: {title}")
             return title
@@ -128,7 +132,7 @@ def main():
     
     # Test 1: Navigate to a simple website
     print("\n🧪 Test 1: Navigate to example.com")
-    if browser.navigate_to_website("https://example.com"):
+    if browser.navigate_to_website("https://fred.stlouisfed.org/"):
         
         # Test 2: Get page title
         print("\n🧪 Test 2: Get page title")
