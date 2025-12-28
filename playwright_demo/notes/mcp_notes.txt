@@ -1,0 +1,141 @@
+%%%%%%%%%%%%%%%%%% INTRODUCTION %%%%%%%%%%%%%%%%%%
+
+	Ultimately this is an open source standard for connecting AI applications to external systems. We can make the AI a bit more personal to tasks. 
+	For developers: This means, that the integration as long as if follows the MCP protocol, can be universal. This means that any MCP-compatible AI (claude, gpt, etc) can use it.
+	For AI applications/agents: This means that as long as the AI is MCP-compatible then the a host of other MCP integrations can be used by the AI making it more capable.
+	For end-user: You get a more personalized AI that can interact with your data. Rather than the AI being limited to being a chat assistant the AI can help with more personalized work.
+
+%%%%%%%%%%%%%%%%%% ARCHITECTURE %%%%%%%%%%%%%%%%%%
+
+SCOPE
+
+	Scope refers to the "projects" that the MCP is responsible for. Specification outlines the implementation requirements for clients and servers. MCP SDK's for different programming languages. Tools for developing servers and clients, includes the MCP inspector. 
+
+CONCEPTS OF MCP
+
+PARTICIPANTS
+
+	MCP follows a client-server architecture where there is an MCP host (an AI application like Claude Code or Claude Desktop) establishes connection with one or more MCP servers. MCP host is the AI application that coordinates and manages one or multiple clients. The client is the component that maintains the connections to the server and obtains the context from the server for the host to use. The server is a program that provides context to the MCP clients.
+	Different objects (clients) connect to servers with there own dedicated connections. An example of the structure: MCP host (Visual Studio Code). The client created when the VS code runtime instantiates and object that maintains connection to the Sentry MCP server. The server in this case is a remote server (Sentry MCP Server).
+	
+LAYERS
+
+DATA LAYER
+
+	This essentially represents the protocol for the client server communication. Here we handle Lifecycle management, Server features, client features, and utility features. Lifecycle manages the connection initialization, capability negotiation, and the connection termination between the clients and the servers. Server features: Includes the ability for the servers to provide tools for AI actions, resources for context data, and prompts for interaction templates from and to the client. Client features: this defined the ability the server has to ask the client to do things. Utility features: Keeps the client informed with live updates and progress tracking.
+
+TRANSPORT LAYER
+	
+	Transport Layer handles HOW messages travel between client and server. Two options: STDIO (local processes talking via stdin/stdout - fast, no network) and Streamable HTTP (remote communication over the web with OAuth authentication). Both use the same JSON-RPC message format regardless of which transport you choose.
+
+DATA LAYER PROTOCOL
+	
+	MCP uses JSON-RPC 2.0 as its underlying RPC protocol. This essentially defines the 'language' between the MCP servers and clients. Developers find the data layer protocol the most interesting, especially the primitives.
+
+LIFECYCLE MANAGEMENT
+
+	Since it is a stateful protocol it requires lifecycle management. LM purpose it to negotiate capabilities that both the client and server support. This simply means that both sides figure out what features they each support so they know what they can use together.
+
+PRIMITIVES
+
+	Primitives define what clients and servers offer each other. They specify the types of contextual information that is shared with AI applications and the range of actions that can be performed. The three core primitives are, Tools, Resources, and Prompts. Tools are functions that AI applications invoke to perform actions. Resources are data sources that provide contextual information to AI applications. Prompts are reusable templates that help structure interactions with language models.
+	MCP also has primitives that the client can expose allowing for more richer interactions. Sampling is one of these additional primitives where the server can request for the AI application to complete specific tasks and make decisions. Rather than the server including its own AI application the server uses the AI of the client. Elicitation is where the server can request additional information only the human user can answer. Logging enable the server to log messages to clients for debugging and monitoring purposes.
+
+NOTIFICATIONS
+
+	Servers can send clients update notifications when tools or functionalities change. 
+
+%%%%%%%%%%%%%%%%%% EXAMPLE %%%%%%%%%%%%%%%%%%
+
+INITIALIZATION
+	
+	MCP initially begins with the handshake process. Here the connection is established and a negotiation of supported features is determined. The initialization exchange consists of negotiating the protocol (currently 2025-11-05). Then capability discovery where each party declares what features they support, including the primitives they handle and whether they support notifications or not. Lastly Identity exchange allows the client and server objects to both provide identification and versioning information. 
+
+PSEUDOCODE
+
+# Pseudo Code
+# create the communication channel to the server
+async with stdio_client(server_config) as (read, write):
+    # create the session
+    async with ClientSession(read, write) as session:
+	# initial handshake
+        init_response = await session.initialize()
+	# 
+        if init_response.capabilities.tools:
+            app.register_mcp_server(session, supports_tools=True)
+        app.set_server_ready(session)
+
+TOOLS DISCOVERY (PRIMITIVES)
+
+	Now that the connection is established the client can discover the available tools by sending a tools/list request. This is important for the client to understand what available tools are available on the server before attempting to use them. The request is simple, contains no parameters. When calling the tool request the response contains an array of available tools. Each array entry is a dictionary that describes the tool. The dictionary contains the name, title, description, and inputSchema. The name is a unique identifier for the tool and follows a clear naming pattern. The title is human-readable and is what clients show users. Description is self explanatory. InputSchema is the definition what parameters/inputs a tool accepts. 
+
+PSEUDOCODE
+
+# Pseudo-code using MCP Python SDK patterns
+# creates an empty list to store all the tools
+available_tools = []
+# looping through all the sessions (in the case the AI app is connected to multiple servers)
+for session in app.mcp_server_sessions():
+    # gets a dictionary of all the tools and stores it in variable
+    tools_response = await session.list_tools()
+    # Add the servers tools to the master list
+    available_tools.extend(tools_response.tools)
+# registers all the tools with the conversation
+conversation.register_available_tools(available_tools)
+
+TOOL EXECUTION (PRIMITIVES)
+
+	Now that the client has access to all the tools the client can invoke them using the tools/call method. Now that the tools have been discovered the client can invoke them with appropriate arguments. 
+
+# Pseudo-code for AI application tool execution
+# a function that helps route tools calls to the appropriate servers for responses
+async def handle_tool_call(conversation, tool_name, arguments):
+    # finds the server with the correct tool
+    session = app.find_mcp_session_for_tool(tool_name)
+    # calls the tool on that server
+    result = await session.call_tool(tool_name, arguments)
+    # add the result to the conversation with the AI
+    conversation.add_tool_result(result.content)
+
+NOTIFICATIONS
+
+	Notifications inform clients without explicitly being requested. Key features include, no response required, capability-based, event-driven. No response required notifications will have no id field in the notification meaning there is no response expected or sent. Capability-based means this server must declare this feature upfront during initialization. Event driven notifications happen as states change, this makes MCP dynamic and responsive. 
+	
+# Pseudo-code for AI application notification handling
+# function that gets called when the client receives a notification from server regarding tool changes
+async def handle_tools_changed_notification(session):
+    # gets the updated tool list from the server
+    tools_response = await session.list_tools()
+    # update the internal registry of the app that maintains the catalog of available tools
+    app.update_available_tools(session, tools_response.tools)
+    # if there is currently a conversation we are telling the app of the update incase it can benefit from the new tools
+    if app.conversation.is_active():
+        app.conversation.notify_llm_of_new_capabilities()
+
+%%%%%%%%%%%%%%%%%% SERVERS %%%%%%%%%%%%%%%%%%
+
+	Servers provide core functionality through three building blocks (tools, resources, and prompts). Tools are functions that the LLM can call and the and decide when and how to use them. Resources are passive data sources that provide read-only access to information for context. Prompts are the instructions the user provides to the model for a specific task.
+	The real power in MCP servers is when they all work together, combining their specialized capabilities through a unified interface. Consider a personalized AI	travel planner application with the three connected servers; travel server, weather server, and calendar/email server.
+
+%%%%%%%%%%%%%%%%%% CLIENTS %%%%%%%%%%%%%%%%%%
+
+	Clients are instantiated by host applications to communicate with particular servers. Each client handles one direct communication with one server. Core client features include elicitation, roots, and sampling. Elicitation enables servers to request specific information from users during interactions. Roots define file system boundaries for server operations allowing clients to specify which directories servers should focus on. Roots communicate intended boundaries. 
+    Sampling allows servers to request LLM completions through the client
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
