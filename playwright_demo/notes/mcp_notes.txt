@@ -49,7 +49,7 @@ NOTIFICATIONS
 
 INITIALIZATION
 	
-	MCP initially begins with the handshake process. Here the connection is established and a negotiation of supported features is determined. The initialization exchange consists of negotiating the protocol (currently 2025-11-05). Then capability discovery where each party declares what features they support, including the primitives they handle and whether they support notifications or not. Lastly Identity exchange allows the client and server objects to both provide identification and versioning information. 
+	MCP initially begins with the handshake process. Here the connection is established and a negotiation of supported features is determined. The initialization exchange consists of negotiating the protocol (currently 2025-11-25). Then capability discovery where each party declares what features they support, including the primitives they handle and whether they support notifications or not. Lastly Identity exchange allows the client and server objects to both provide identification and versioning information. 
 
 PSEUDOCODE
 
@@ -120,7 +120,7 @@ async def handle_tools_changed_notification(session):
 %%%%%%%%%%%%%%%%%% CLIENTS %%%%%%%%%%%%%%%%%%
 
 	Clients are instantiated by host applications to communicate with particular servers. Each client handles one direct communication with one server. Core client features include elicitation, roots, and sampling. Elicitation enables servers to request specific information from users during interactions. Roots define file system boundaries for server operations allowing clients to specify which directories servers should focus on. Roots communicate intended boundaries. 
-    Sampling allows servers to request LLM completions through the client
+    Sampling allows servers to request LLM completions through the client, enabling agentic behaviors. Sampling enables servers to perform AI-dependant tasks without directly integrating the AI model. The servers request the client to handle these tasks on there behalf. 
 
 
 
