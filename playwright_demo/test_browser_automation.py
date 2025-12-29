@@ -112,7 +112,12 @@ class BrowserAutomator:
         
         if result and not result.get("error"):
             # Navigate the nested response structure (result->result) to extract the title. Use .get() with defaults as a safeguard if keys are missing.
-            title = result.get("result", {}).get("result", "Unknown")
+            title = result["result"]["content"][0]["text"]
+            # Split by newlines, get second line (index 1)
+            lines = title.split('\n')
+            title_line = lines[1]  # "Federal Reserve Economic Data..."
+            # Remove the quotes
+            title = title_line.strip('"')
             print(f"✅ Page title: {title}")
             return title
         else:
@@ -132,7 +137,8 @@ def main():
     
     # Test 1: Navigate to a simple website
     print("\n🧪 Test 1: Navigate to example.com")
-    if browser.navigate_to_website("https://fred.stlouisfed.org/"):
+    if browser.navigate_to_website("https://www.cs.usfca.edu/~galles/visualization/Algorithms.html"):
+        print(f"Session ID after navigation: {browser.client.session_id}")
         
         # Test 2: Get page title
         print("\n🧪 Test 2: Get page title")

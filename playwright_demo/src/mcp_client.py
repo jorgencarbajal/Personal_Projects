@@ -181,13 +181,13 @@ class SessionMCPClient:
             print(f"Status: {response.status_code}")
             
             # HTTP status code 200 means 'OK'
-            if response.status_code == 200:
+            if response.status_code in [200, 202]:
                 # Parse the response text as SSE format into a dictionary
                 parsed_data = self.parse_sse_response(response.text)
                 # If parsing succeeded, print and return the data
                 if parsed_data:
                     # json.dumps() converts the dictionary to a formatted JSON string for printing
-                    print(f"Response: {json.dumps(parsed_data, indent=2)}")
+                    # %%%%%%%%%%%%%%%%%%%%%%%% print(f"Response: {json.dumps(parsed_data, indent=2)}")
                     return parsed_data
                 # if parsing failed (response wasn't valid SSE format)
                 else:
