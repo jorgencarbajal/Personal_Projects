@@ -1,0 +1,1 @@
+This txt file discusses the AI integration. Here we are essentially starting to build out the AI. 
