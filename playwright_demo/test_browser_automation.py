@@ -137,7 +137,7 @@ def main():
     
     # Test 1: Navigate to a simple website
     print("\n🧪 Test 1: Navigate to example.com")
-    if browser.navigate_to_website("https://www.cs.usfca.edu/~galles/visualization/Algorithms.html"):
+    if browser.navigate_to_website("https://www.theodinproject.com/paths/full-stack-javascript"):
         print(f"Session ID after navigation: {browser.client.session_id}")
         
         # Test 2: Get page title
