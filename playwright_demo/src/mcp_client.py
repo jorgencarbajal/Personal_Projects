@@ -140,6 +140,8 @@ class SessionMCPClient:
     """
     def send_with_session(self, method, params=None, is_notification=False, use_sse=False):
         """Send request with session ID"""
+        print(f"🔍 DEBUG - send_with_session called with session_id: {self.session_id}")  # ← ADD THIS
+
         # sets the payload
         payload = {
             "jsonrpc": "2.0",
@@ -263,6 +265,7 @@ class SessionMCPClient:
     """
     def send_tool_call(self, tool_name, parameters=None):
         """Send a tool call (tools/call method)"""
+        print(f"DEBUG send_tool_call - Session ID: {self.session_id}")  # ← ADD THIS
 
         # ensure there is an active session
         if not self.session_id:

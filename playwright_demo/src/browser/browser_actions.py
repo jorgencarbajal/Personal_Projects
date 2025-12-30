@@ -5,19 +5,18 @@ from src.mcp_client import SessionMCPClient
 import json
 
 class BrowserAutomator:
-
-    """
-    Special constructor that runs when creating new instance of the class. It creates an instance variable names client and assigns it a new SessionMCPClient object. We then create and initialized variable and assign it to false which tracks whether the browser connection has been setup.
-    """
+    
     def __init__(self):
+        """
+        Special constructor that runs when creating new instance of the class. It creates an instance variable names client and assigns it a new SessionMCPClient object. We then create and initialized variable and assign it to false which tracks whether the browser connection has been setup.
+        """
         self.client = SessionMCPClient()
         self.initialized = False
     
-    """
-    This method initializes the mcp server by calling the method from the mcp_client file. First starts by calling the 'complete_initialization' method on the self.client and stores the return value (true/false) in the success variable. If success is true then set initialized to true and return true if not return false.
-    """
     def initialize(self):
-        """Initialize the MCP connection"""
+        """
+        This method initializes the mcp server by calling the method from the mcp_client file. First starts by calling the 'complete_initialization' method on the self.client and stores the return value (true/false) in the success variable. If success is true then set initialized to true and return true if not return false.
+        """
         print("🔧 Initializing browser automation...")
         success = self.client.complete_initialization()
         if success:
@@ -28,11 +27,10 @@ class BrowserAutomator:
             print("❌ Failed to initialize browser automation")
             return False
     
-    """
-    First we ensure that the server/browser is initialized. We then call the 'send_tool_call' function that uses the browser_navigate tool to navigate to the appropriate website. This function ultimately returns a dictionary. We test to see if the dictionary exists and the 'error' key does not exist (or is falsy).
-    """
     def navigate_to_website(self, url):
-        """Navigate to a specific website"""
+        """
+        First we ensure that the server/browser is initialized. We then call the 'send_tool_call' function that uses the browser_navigate tool to navigate to the appropriate website. This function ultimately returns a dictionary. We test to see if the dictionary exists and the 'error' key does not exist (or is falsy).
+        """
         if not self.initialized:
             print("❌ Browser not initialized!")
             return False
@@ -47,11 +45,10 @@ class BrowserAutomator:
             print(f"❌ Failed to navigate: {result}")
             return False
     
-    """
-    First we start by again ensuring that a session is initialized. We then call the 'browser_snapshot' tool with the send_tool_call function. Finally an if else statement that helps determine whether the screen capture was successfull or not. We return the dictionary if true or false if anything fails. As compared to the navigate function, this function actually returns a dictionary since the page_snapshot function will provide useful details for moving through the program.
-    """
     def take_page_snapshot(self):
-        """Take an accessibility snapshot of the current page"""
+        """
+        First we start by again ensuring that a session is initialized. We then call the 'browser_snapshot' tool with the send_tool_call function. Finally an if else statement that helps determine whether the screen capture was successfull or not. We return the dictionary if true or false if anything fails. As compared to the navigate function, this function actually returns a dictionary since the page_snapshot function will provide useful details for moving through the program.
+        Take an accessibility snapshot of the current page"""
         if not self.initialized:
             print("❌ Browser not initialized!")
             return None
@@ -66,13 +63,12 @@ class BrowserAutomator:
             print(f"❌ Failed to capture snapshot: {result}")
             return None
     
-    """
-    Note: The reason we include 'self' is because when we call the function like this... client.get_page_title(), Python automatically passes client as the first argument. Without self, we get an error.
-
-    A method that obtains the page title by calling the browser_evaluate tool. The dictionary parameter {"function": "() => document.title"} contains JavaScript code that browser_evaluate executes in the browser to retrieve the page title. JavaScript code is required when using the browser_evaluate tool.
-    """
     def get_page_title(self):
-        """Get page title using JavaScript evaluation"""
+        """
+        Note: The reason we include 'self' is because when we call the function like this... client.get_page_title(), Python automatically passes client as the first argument. Without self, we get an error.
+        A method that obtains the page title by calling the browser_evaluate tool. The dictionary parameter {"function": "() => document.title"} contains JavaScript code that browser_evaluate executes in the browser to retrieve the page title. JavaScript code is required when using the browser_evaluate tool.
+        Get page title using JavaScript evaluation
+        """
         if not self.initialized:
             print("❌ Browser not initialized!")
             return None
@@ -98,3 +94,69 @@ class BrowserAutomator:
         else:
             print(f"❌ Failed to get title: {result}")
             return None
+        
+    def click(self, ref):
+        """Click an element using its ref ID"""
+        if not self.initialized:
+            print("❌ Browser not initialized!")
+            return False
+        
+        print(f"🖱️ Clicking element: {ref}")
+        
+        result = self.client.send_tool_call("browser_click", {"ref": ref})
+        if result and not result.get("error"):
+            print(f"✅ Successfully clicked {ref}")
+            return True
+        else:
+            print(f"❌ Failed to click: {result}")
+            return False
+        
+    def fill(self, ref, text):
+
+        """Fill a text field with the given text"""
+        if not self.initialized:
+            print("❌ Browser not initialized!")
+            return False
+        
+        print(f"⌨️ Filling element {ref} with: {text}")
+        
+        result = self.client.send_tool_call("browser_fill", {"ref": ref, "value": text})
+        if result and not result.get("error"):
+            print(f"✅ Successfully filled {ref}")
+            return True
+        else:
+            print(f"❌ Failed to fill: {result}")
+            return False
+
+    def get_current_url(self):
+        if not self.initialized:
+            print("❌ Browser not initialized!")
+            return None
+        
+        print("🔗 Getting current URL...")
+        
+        result = self.client.send_tool_call("browser_evaluate", {
+            "function": "() => document.location.href"
+        })
+        
+        print(f"DEBUG - Full result: {result}")
+        
+        if result and not result.get("error"):
+            # Check if we have the full response structure
+            content = result.get("result", {}).get("content", [])
+            if content and len(content) > 0:
+                text = content[0].get("text", "")
+                lines = text.split('\n')
+                if len(lines) > 1:
+                    url = lines[1].strip('"')
+                    print(f"✅ Current URL: {url}")
+                    return url
+            
+            # If no content, the response might just be {'success': True}
+            # This means the evaluate ran but didn't return structured data
+            print("⚠️ Got success but no URL data")
+            return None
+        
+        print("❌ Failed to get URL")
+        return None
+
