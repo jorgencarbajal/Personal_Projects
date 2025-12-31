@@ -71,7 +71,7 @@ class SessionMCPClient:
         
         # Wait for response (skip for notifications)
         if not is_notification:
-            return self.response_queue.get(timeout=10)
+            return self.response_queue.get(timeout=30)
         return None
     
     def establish_session(self):
