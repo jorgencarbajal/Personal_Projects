@@ -1,1 +1,44 @@
 This txt file discusses the AI integration. Here we are essentially starting to build out the AI. 
+
+well i essentially built out all the AI... will have to come back and fix steps 10-15...
+
+now these are the next steps. 
+
+After Orchestrator Works
+    1. Test with Simple Goals (Next immediate step)
+
+        "Go to Google and search for Python"
+        "Navigate to Amazon"
+        Verify the full loop: snapshot → AI → action → repeat
+
+    2. Refine the AI Prompting
+
+        Improve prompt_builder.py to give Claude better context
+        Add examples of good actions
+        Handle edge cases (page not loaded, element not found)
+
+    3. Add Error Recovery
+
+        What if Claude suggests a bad selector?
+        What if navigation fails?
+        Retry logic, fallback strategies
+
+    4. Test Complex Goals
+
+        "Find the cheapest laptop under $500 on Amazon"
+        Multi-step workflows
+        See where it breaks, fix it
+
+    5. Polish & Documentation
+
+        Clean up debug prints
+        Add proper logging
+        Write README explaining the architecture
+        Record a demo video
+
+    6. Submit to Employer 🎯
+
+        Show working demo
+        Explain architecture decisions
+        Highlight MCP integration
+        Discuss challenges you solved (like the stdio vs HTTP issue!)

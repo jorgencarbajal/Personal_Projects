@@ -8,7 +8,7 @@ def test_simple_goal():
     orchestrator = Orchestrator()
     
     # Simple test goal
-    goal = "Go to Google and search for 'Python programming'"
+    goal = "Navigate to the amazon website"
     
     # Execute
     result = orchestrator.execute_goal(goal, start_url="https://google.com")

@@ -91,6 +91,7 @@ class Orchestrator:
             # 3c. Get AI decision
             try:
                 ai_response = self.ai_client.get_next_action(prompt)
+                print(f"🔍 DEBUG - Claude's raw response: {ai_response}")
             except Exception as e:
                 print(f"❌ AI call failed: {e}")
                 return f"AI error: {str(e)}"
@@ -114,6 +115,11 @@ class Orchestrator:
                 value = action.get("value", "")
                 print(f"⌨️  Filling {ref} with '{value}'")
                 self.browser.fill(ref, value)
+
+            
+                print("⏳ Waiting for page to load...")
+                time.sleep(5)  # Give navigation time to complete
+
             
             elif action["action"] == "click":
                 ref = action.get("ref", "")
@@ -172,8 +178,5 @@ class Orchestrator:
         # Or if there aint shit, return this
         return "No snapshot available"
     
-    def _keepalive(self):
-        """Quick action to keep browser session alive"""
-        # Just check if browser is still responding
-        # Don't print anything, this is just a heartbeat
-        pass  # For now, just reducing wait time should be enough
+
+
