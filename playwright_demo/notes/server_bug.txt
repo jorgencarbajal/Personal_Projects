@@ -1,0 +1,274 @@
+There was a server bug that kept persisting. The issue essentially was that the server would open and five seconds later the server would close. Online the Playwright documentation explains that the server timesout after 5 seconds of inactivity. I dont know how but I found this file... (playwright_demo\node_modules\@playwright\mcp\node_modules\playwright\lib\mcp\sdk\server.js) and entered the contents into claude to see if maybe the issue lied in there.
+
+const startHeartbeat = (server) => {
+  const beat = () => {
+    Promise.race([
+      server.ping(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("ping timeout")), 5e3))
+    ]).then(() => {
+      setTimeout(beat, 3e3);
+    }).catch(() => {
+      void server.close();  // ← THIS CLOSES THE SERVER
+    });
+  };
+  beat();
+};
+
+The issue: The MCP server pings your client every 3 seconds. If the ping doesn't get a response within 5 seconds (5e3 = 5000ms), it closes the entire server (and your browser).
+
+Here is a breakdown of the issue and the solution...
+
+================================================================================
+BUG REPORT: Playwright MCP Browser Closing After 5 Seconds
+================================================================================
+
+DATE: December 30, 2025
+PROJECT: Playwright MCP Server Integration with Python Client
+
+================================================================================
+PROBLEM DESCRIPTION
+================================================================================
+
+SYMPTOM:
+- Browser would open successfully
+- Navigate to a webpage (e.g., Google)
+- Close automatically after exactly 5 seconds
+- No error messages displayed
+- Script continued running, but browser was gone
+
+OBSERVED BEHAVIOR:
+1. MCP server starts on port 3000
+2. Python client connects via HTTP
+3. Browser opens and navigates
+4. After ~5 seconds of inactivity, browser closes
+5. Subsequent commands fail (browser no longer exists)
+
+================================================================================
+ROOT CAUSE ANALYSIS
+================================================================================
+
+TRANSPORT METHOD: HTTP (using --port 3000)
+
+When the Playwright MCP server runs with HTTP transport, it implements a 
+heartbeat/ping mechanism to detect disconnected clients.
+
+KEY CODE LOCATION:
+File: playwright_demo\node_modules\@playwright\mcp\node_modules\playwright\lib\mcp\sdk\server.js
+
+Relevant function:
+```javascript
+const startHeartbeat = (server) => {
+  const beat = () => {
+    Promise.race([
+      server.ping(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("ping timeout")), 5e3))
+    ]).then(() => {
+      setTimeout(beat, 3e3);
+    }).catch(() => {
+      void server.close();  // ← THIS CLOSES THE SERVER AND BROWSER
+    });
+  };
+  beat();
+};
+```
+
+HOW IT WORKS:
+1. Server sends ping every 3 seconds
+2. Waits maximum 5 seconds (5000ms) for response
+3. If no response within 5 seconds → closes entire server
+4. Closing server → closes browser instances
+
+WHY IT WAS TRIGGERED:
+- Python HTTP client was NOT responding to ping requests
+- Server assumed client disconnected after 5-second timeout
+- Server cleaned up resources (including browser)
+
+INITIAL DISCOVERY:
+Found default timeout in config.d.ts:
+```typescript
+timeouts?: {
+  action?: number;        // Defaults to 5000ms
+  navigation?: number;    // Defaults to 60000ms
+};
+```
+
+This was a red herring - these are ACTION timeouts, not connection timeouts.
+
+================================================================================
+ATTEMPTED SOLUTIONS (UNSUCCESSFUL)
+================================================================================
+
+1. KEEPALIVE THREAD (HTTP)
+   - Added background thread sending periodic requests
+   - Still experienced timeout issues
+   - Added complexity without solving root problem
+
+2. MODIFYING TIMEOUTS
+   - Attempted to increase timeout values
+   - Didn't address the actual heartbeat/ping mechanism
+
+================================================================================
+FINAL SOLUTION
+================================================================================
+
+APPROACH: Switch from HTTP transport to STDIO transport
+
+WHY THIS WORKS:
+Looking at the server startup code:
+
+```javascript
+async function start(serverBackendFactory, options) {
+  if (options.port === void 0) {
+    // ← STDIO PATH (no heartbeat!)
+    await connect(serverBackendFactory, new mcpBundle.StdioServerTransport(), false);
+    return;
+  }
+  // HTTP path with heartbeat
+  const httpServer = await startHttpServer(options);
+  // ...
+}
+```
+
+Notice the third parameter: `false` → This is `runHeartbeat`
+- STDIO transport: runHeartbeat = false (no ping mechanism)
+- HTTP transport: runHeartbeat = true (5-second timeout)
+
+IMPLEMENTATION STEPS:
+
+1. CHANGE SERVER LAUNCH:
+   Before: npx @playwright/mcp --port 3000
+   After:  npx @playwright/mcp
+
+2. REWRITE PYTHON CLIENT FOR STDIO:
+   Replace HTTP-based SessionMCPClient with subprocess-based version
+
+Key changes:
+```python
+class SessionMCPClient:
+    def __init__(self):
+        self.process = None  # Subprocess instead of HTTP session
+        self.request_id = 1
+        self.session_id = None
+        self.response_queue = Queue()
+        
+    def _start_server(self):
+        """Launch MCP server as subprocess"""
+        self.process = subprocess.Popen(
+            ['npx', '@playwright/mcp'],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+            shell=True  # Required for Windows (npx.cmd)
+        )
+        
+    def _send_request(self, method, params=None, is_notification=False):
+        """Send JSON-RPC via stdin, receive via stdout"""
+        request = {"jsonrpc": "2.0", "method": method}
+        if not is_notification:
+            request["id"] = self.get_next_id()
+        if params:
+            request["params"] = params
+            
+        # Write to stdin
+        message = json.dumps(request) + '\n'
+        self.process.stdin.write(message)
+        self.process.stdin.flush()
+        
+        # Read from stdout
+        if not is_notification:
+            return self.response_queue.get(timeout=10)
+```
+
+3. WINDOWS-SPECIFIC FIX:
+   Added `shell=True` to subprocess.Popen()
+   Reason: Windows uses npx.cmd, not npx executable
+
+================================================================================
+RESULTS AFTER FIX
+================================================================================
+
+✅ Browser stays open indefinitely
+✅ No timeout after 5 seconds
+✅ All browser actions work throughout script execution
+✅ No keepalive mechanism needed
+✅ Simpler, more reliable communication
+
+TEST OUTPUT:
+- Browser opened
+- Navigated to Google
+- Waited 10 seconds (browser stayed open)
+- Took snapshot successfully
+- Waited another 10 seconds (browser still open)
+- Test completed successfully
+
+================================================================================
+KEY LEARNINGS
+================================================================================
+
+1. TRANSPORT MATTERS:
+   - HTTP transport = heartbeat/ping required
+   - STDIO transport = no heartbeat, simpler
+   - Choose transport based on use case
+
+2. TIMEOUT TYPES:
+   - Action timeouts (5000ms) ≠ Connection timeouts
+   - Read documentation carefully to identify correct timeout
+
+3. DEBUGGING PROCESS:
+   - Look for exact timing patterns (5 seconds was the clue)
+   - Check server-side code, not just client-side
+   - Understand the protocol transport layer
+
+4. WINDOWS CONSIDERATIONS:
+   - Windows uses .cmd wrappers (npx.cmd)
+   - subprocess.Popen() needs shell=True for .cmd files
+
+================================================================================
+BEST PRACTICES FOR MCP + PLAYWRIGHT
+================================================================================
+
+1. Use STDIO transport for:
+   - Long-running browser sessions
+   - Local development
+   - Single client scenarios
+   - Simpler communication needs
+
+2. Use HTTP transport for:
+   - Multiple clients
+   - Remote connections
+   - When you can implement proper ping/pong handling
+   - Production deployments with proper client management
+
+3. Always handle platform differences:
+   - Windows: shell=True for subprocess
+   - Test on target platform before deployment
+
+4. Client responsibilities with HTTP:
+   - Must respond to server pings
+   - Implement proper connection management
+   - Handle disconnection gracefully
+
+================================================================================
+FILE LOCATIONS REFERENCE
+================================================================================
+
+SERVER CODE:
+- playwright_demo\node_modules\@playwright\mcp\node_modules\playwright\lib\mcp\sdk\server.js
+  - start() function (line ~90)
+  - startHeartbeat() function
+  - connect() function
+
+CONFIG DEFINITIONS:
+- playwright_demo\node_modules\@playwright\mcp\config.d.ts
+  - Timeout configurations
+
+CLIENT CODE:
+- playwright_demo/src/mcp_client.py
+  - SessionMCPClient class
+  - STDIO implementation
+
+================================================================================
+END OF REPORT
+================================================================================
