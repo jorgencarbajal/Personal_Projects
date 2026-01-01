@@ -1,3 +1,36 @@
+## Installation
+
+### 1. Install Node.js Dependencies
+```bash
+npm install
+```
+
+### 2. Set Up Python Environment
+```bash
+python -m venv python_client
+.\python_client\Scripts\Activate.ps1  # Windows
+# or: source python_client/bin/activate  # Mac/Linux
+```
+
+### 3. Install Python Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Configure API Key
+Create a `.env` file in the project root:
+```
+ANTHROPIC_API_KEY=your_api_key_here
+```
+
+
+
+
+
+
+
+
+
 # Actual Project Review - What You Really Built
 
 Based on your actual code files, here's what you have:
