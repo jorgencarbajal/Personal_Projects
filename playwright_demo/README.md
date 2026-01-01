@@ -2,6 +2,8 @@
 
 This project is an MCP (Model Context Protocol) server that wraps Playwright's browser automation capabilities. MCP is a standardized protocol that allows AI models like Claude to interact with tools and data sources. By exposing Playwright's functionality through MCP, we enable AI agents to perform complex browser automation tasks autonomously.
 
+**How it works:** The MCP client handles all protocol translation between the LLM and the server, allowing the AI to request browser actions and receive results without needing to understand the underlying implementation details.
+
 The key difference from traditional scripted automation is the agentic loop: the AI observes the results of each action, reasons about the current state, and decides what to do next. For example, if you ask the AI to "buy the cheapest Dell laptop on Amazon," it would:
 
 1. Navigate to Amazon
@@ -11,7 +13,7 @@ The key difference from traditional scripted automation is the agentic loop: the
 5. Identify the cheapest option
 6. Add it to cart and proceed through checkout
 
-Each step informs the next, allowing the AI to adapt to dynamic page states and handle unexpected scenarios without pre-programmed instructions.
+Each step informs the next, allowing the AI to adapt to dynamic page states and handle unexpected scenarios without pre-programmed instructions. 
 
 ## Installation
 
@@ -38,20 +40,25 @@ Create a `.env` file in the project root:
 ANTHROPIC_API_KEY=your_api_key_here
 ```
 
-
-
-
 ## CURRENT TASKS
 
 - Go through old read me and see if there is any pertinent info you want to keep...
 - review and write notes in all code
 - update readme with a breakdown of how all the code works, or in a notes file
 - continue testing and debugging
-	better snapshot_parser?
-	better prompt?
-   why is there no tool list function in mcp_client
-   when calling a tool, having an error for when an incorrect tool is called...
-
+	- better snapshot_parser?
+	- better prompt?
+   - why is there no tool list function in mcp_client
+   - when calling a tool, having an error for when an incorrect tool is called...
+   - Shows that element references (ref=e2) work correctly???
+   - how is the YAML being parsed and understood by the client, (issue here?)
+   - I keep reading more of the MD files and it seems like parsing the yaml maybe the issue
+   - I see the evaluate tool, should I be using that?
+   - Include page snapshot in prompt...? am I doing this?
+   - Definitely dont seem as if I am explaining the MCP tools...
+   - Parse AI response into tools calls
+- implement error handling, think of common things that can go wrong and test against them
+User goal → AI → Tool call → Execute → New snapshot → AI → ...
 
 ## What You Need to Add for AI Integration
 
