@@ -42,9 +42,9 @@ ANTHROPIC_API_KEY=your_api_key_here
 
 ## CURRENT TASKS
 
-- Go through old read me and see if there is any pertinent info you want to keep...
 - review and write notes in all code
 - update readme with a breakdown of how all the code works, or in a notes file
+- above needs to be done before school starts again
 - continue testing and debugging
 	- better snapshot_parser?
 	- better prompt?
