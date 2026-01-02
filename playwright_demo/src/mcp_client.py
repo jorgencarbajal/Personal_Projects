@@ -3,15 +3,22 @@ MCP Client using stdio transport
 
 This connects to the Playwright MCP server via subprocess stdin/stdout instead of HTTP.
 """
+# imports python subprocesses which lets you launch and control external programs from python script
 import subprocess
+# python json module that converts between python dictionaries and json strings
 import json
+# module that lets your run muliple pieces of code at the same time (In this case so the notifications dont get mixed with the reponses?)
 import threading
+# importing the data structure
 from queue import Queue
 
+# The SessionMCPClient class that is contains all the necessary functions for client objects
 class SessionMCPClient:
     def __init__(self):
         """Initialize stdio-based MCP client"""
+        # Once the server starts this holds a Popen object. This is the handle to the running MCP server subprocess - it's the "remote control" that lets you talk to it.
         self.process = None
+        
         self.request_id = 1
         self.session_id = None
         self.response_queue = Queue()
