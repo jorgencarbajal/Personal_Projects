@@ -71,8 +71,9 @@ class SessionMCPClient:
         print("✅ Server started")
     
     def _read_responses(self):
-        """Background thread that reads server responses"""
-        # This is a loop that continues as long as the server as been started AND it is still running. 'self.process.poll() returns None if the process is still running
+        """
+        This is a loop that continues as long as the server as been started AND it is still running. 'self.process.poll() returns None if the process is still running
+        """
         while self.process and self.process.poll() is None:
             try:
                 # Reads a complete line from the MCP server's stdout pipe and stores it in line
@@ -88,76 +89,121 @@ class SessionMCPClient:
                 break
     
     def _send_request(self, method, params=None, is_notification=False):
-        """Send JSON-RPC request via stdin"""
+        """
+        Send JSON-RPC request to MCP server via stdin.
+
+        - Build JSON-RPC request dictionary with method name
+        - Add unique ID if NOT a notification (notifications don't get IDs)
+        - Add parameters if provided
+        - Convert dictionary to JSON string and add newline
+        - Write message to server's stdin
+        - Flush buffer to send immediately
+        - Wait for response from queue (skip for notifications)
+        - Return response dictionary (or None for notifications)
+        """
+        
+        # creating a dictionary that will become json-rpc message to send to the server
         request = {
             "jsonrpc": "2.0",
             "method": method
         }
         
+        # If it is not a notification set it to the current id and increment request_id
         if not is_notification:
             request["id"] = self.get_next_id()
         
+        # If there are parameters, set them
         if params:
             request["params"] = params
-        
+        # Convert request dictionary to JSON string and add newline for line buffering
         message = json.dumps(request) + '\n'
+        # We then send the message to the server
         self.process.stdin.write(message)
+        # Force buffered data to send immediately (don't wait for buffer to fill)
         self.process.stdin.flush()
         
         # Wait for response (skip for notifications)
         if not is_notification:
+            # Wait up to 30 seconds for response from queue (responses are dictionaries)
             return self.response_queue.get(timeout=30)
         return None
     
     def establish_session(self):
-        """Initialize connection with MCP server"""
+        """
+        Establish session with MCP server:
+        - Check if server is running; start it if not
+        - Send initialization request with client info and protocol version
+        - Check server response for success ("result" key)
+        - Return True if successful, False otherwise
+        """
         print("=== Establishing Session ===")
         
+        # If there isnt a server start one
         if not self.process:
             self._start_server()
         
+        # These are parameters used to tell the server about the client (initial handshake)
         params = {
+            # Which protocol the client speaks
             "protocolVersion": "2024-11-05",
+            # Tell the server what features the client supports
             "capabilities": {},
+            # Identifies who/what the client is
             "clientInfo": {
                 "name": "python-stdio-client",
                 "version": "1.0.0"
             }
         }
         
+        # Attempt to initialize connection with MCP server 
         try:
+            # Send the initilization request
             response = self._send_request("initialize", params)
+            # Convert response dict to formatted JSON string for readable output
             print(f"Initialize response: {json.dumps(response, indent=2)}")
             
+            # Check for "result" key to confirm successful initialization (vs error response)
             if "result" in response:
                 self.session_id = "stdio-session"  # Stdio doesn't use session IDs
                 print("✅ Session established")
                 return True
-                
+            
+            # If establishing the session fails
             print("❌ Failed to establish session")
             return False
+        
+        # Catch any errors during initialization (e.g., server crash, connection issues, malformed response)
         except Exception as e:
             print(f"Session establishment failed: {e}")
             return False
     
     def complete_initialization(self):
-        """Complete MCP initialization"""
+        """
+        - Establish the session
+        - Send initialized notification to confirm readiness
+        - Check for the available tools
+        """
         print("\n=== Complete MCP Initialization ===")
         
+        # This is the function call that establishes the session
         if not self.establish_session():
             return False
         
+        # Send 'initialized' notification - required by MCP protocol to confirm client is ready
         print("\n2. Send initialized notification:")
         self._send_request("initialized", is_notification=True)
         print("✅ Initialized notification sent")
         
+        # Response structure: {"result": {"tools": [...]}}
         print("\n3. Test tools/list:")
         tools_result = self._send_request("tools/list")
         
+        # If there is something returned from the tools result and there is a value for the "result" key then we show success and return true.
         if tools_result and "result" in tools_result:
             print("🎉 SUCCESS! Tools working!")
             return True
         
+        # If tools/list request failed or returned no result
         print("❌ Tools/list failed")
         return False
     
