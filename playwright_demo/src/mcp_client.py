@@ -39,7 +39,9 @@ class SessionMCPClient:
         return current
     
     def _start_server(self):
-        """Launch MCP server as subprocess"""
+        """
+        Launch MCP server subprocess via npx and start daemon thread to continuously read server responses from stdout and place them in response_queue.
+        """
         print("=== Starting MCP Server ===")
         # "Process Open" launches a new program as a separate process and gives you control over it. 
         self.process = subprocess.Popen(
@@ -70,13 +72,19 @@ class SessionMCPClient:
     
     def _read_responses(self):
         """Background thread that reads server responses"""
+        # This is a loop that continues as long as the server as been started AND it is still running. 'self.process.poll() returns None if the process is still running
         while self.process and self.process.poll() is None:
             try:
+                # Reads a complete line from the MCP server's stdout pipe and stores it in line
                 line = self.process.stdout.readline()
+                # if there was something to read, we us json loads ()
                 if line:
+                    # strips the whitespaces/newlines at the ends and loads the string into a dictionary
                     response = json.loads(line.strip())
+                    # add the response dictionary to the back of the queue
                     self.response_queue.put(response)
             except:
+                print(f"❌ Background thread error: {e}")
                 break
     
     def _send_request(self, method, params=None, is_notification=False):

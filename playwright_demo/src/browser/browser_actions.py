@@ -95,6 +95,15 @@ class BrowserAutomator:
             print(f"❌ Failed to get title: {result}")
             return None
         
+
+
+
+
+
+
+
+    # Needs defining/understanding
+
     def click(self, ref):
         """Click an element using its ref ID"""
         if not self.initialized:
