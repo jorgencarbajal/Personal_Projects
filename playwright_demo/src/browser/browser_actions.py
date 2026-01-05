@@ -65,9 +65,9 @@ class BrowserAutomator:
     
     def get_page_title(self):
         """
-        Note: The reason we include 'self' is because when we call the function like this... client.get_page_title(), Python automatically passes client as the first argument. Without self, we get an error.
-        A method that obtains the page title by calling the browser_evaluate tool. The dictionary parameter {"function": "() => document.title"} contains JavaScript code that browser_evaluate executes in the browser to retrieve the page title. JavaScript code is required when using the browser_evaluate tool.
-        Get page title using JavaScript evaluation
+        Get the page title by executing JavaScript in the browser.
+        Uses browser_evaluate tool to run document.title.
+        Returns the title string or None if it fails.
         """
         if not self.initialized:
             print("❌ Browser not initialized!")
@@ -75,24 +75,36 @@ class BrowserAutomator:
         
         print("📋 Getting page title...")
         
-        # result is a variable that stores the return value from the send_tool_call function, which returns a dictionary if successful. When send_tool_call is invoked, its arguments are "browser_evaluate" (a tool provided by the MCP server) and the dictionary {"function": "() => document.title"} (the parameters). The string "browser_evaluate" becomes the tool_name parameter, while the dictionary {"function": "() => document.title"} becomes the parameters argument, where "function" is the key expected by the browser_evaluate tool and "() => document.title" is the value - a JavaScript arrow function that retrieves the page title.
-        # browser_evaluate is a tool that executes javascript code. It specifically always needs a function parameter.
-        result = self.client.send_tool_call("browser_evaluate", {
-            "function": "() => document.title"
-        })
-        
-        if result and not result.get("error"):
-            # Navigate the nested response structure (result->result) to extract the title. Use .get() with defaults as a safeguard if keys are missing.
-            title = result["result"]["content"][0]["text"]
-            # Split by newlines, get second line (index 1)
-            lines = title.split('\n')
-            title_line = lines[1]  # "Federal Reserve Economic Data..."
-            # Remove the quotes
-            title = title_line.strip('"')
-            print(f"✅ Page title: {title}")
-            return title
-        else:
-            print(f"❌ Failed to get title: {result}")
+        try:
+            result = self.client.send_tool_call("browser_evaluate", {
+                "function": "() => document.title"
+            })
+            
+            print(f"🔍 DEBUG - get_page_title() raw result: {result}")
+            
+            if result and not result.get("error"):
+                # Safely navigate the nested response structure
+                content = result.get("result", {}).get("content", [])
+                
+                if content and len(content) > 0:
+                    text = content[0].get("text", "")
+                    lines = text.split('\n')
+                    
+                    # Check that we have at least 2 lines before accessing index 1
+                    if len(lines) > 1:
+                        title = lines[1].strip('"')
+                        print(f"✅ Page title: {title}")
+                        return title
+                
+                # If we got here, response structure was unexpected
+                print(f"⚠️ Unexpected response structure")
+                return None
+            else:
+                print(f"❌ Failed to get title: {result}")
+                return None
+            
+        except Exception as e:
+            print(f"❌ Exception getting title: {e}")
             return None
         
 
@@ -164,12 +176,41 @@ class BrowserAutomator:
             return False
         
     def press_enter(self):
-        """Press the Enter key"""
+        """
+        - Ensure the browser is initialized
+        - Try sending the tool call
+        - Was it successful or not? Returns True or False
+        """
+
+        # Ensure the browser is initialized
         if not self.initialized:
+            print("❌ Browser not initialized!")
             return False
         
-        result = self.client.send_tool_call("browser_press_key", {"key": "Enter"})
-        return result and not result.get("error")
+        print("⌨️ Pressing Enter...")
+        
+        # Try sending the tool call using the correct method
+        try:
+            # Send the tool call using "browser_press_key"
+            result = self.client.send_tool_call("browser_press_key", {"key": "Enter"})
+            
+            # result will be a dictionary and this will print the dictionary
+            print(f"🔍 DEBUG - press_enter() raw result: {result}")
+            
+            # If there was success
+            if result and not result.get("error"):
+                print("✅ Successfully pressed Enter")
+                return True
+            # If there wasnt
+            else:
+                print(f"❌ Failed to press Enter: {result}")
+                return False
+                
+        # Catch any exception - most commonly a timeout when Enter triggers navigation
+        except Exception:
+            # Enter often triggers form submission/navigation
+            print(f"⚠️ Press Enter timeout (navigation in progress) - treating as success")
+            return True
 
     def get_current_url(self):
         if not self.initialized:
@@ -202,4 +243,3 @@ class BrowserAutomator:
         
         print("❌ Failed to get URL")
         return None
-

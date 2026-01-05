@@ -145,9 +145,11 @@ class Orchestrator:
         print(f"\n{'='*60}")
         if goal_achieved:
             print(f"🎉 SUCCESS!")
+            self.browser.client.close()
             return result
         else:
             print(f"⏱️ Reached maximum steps")
+            self.browser.client.close()
             return f"Did not complete goal within {self.max_steps} steps"
     
     def _extract_snapshot_text(self, snapshot_result):

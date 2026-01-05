@@ -215,7 +215,7 @@ class SessionMCPClient:
 
         - Check for active session
         - Build tool call parameters
-        - Send request and return response
+        - Send request and return response (response ultimately a dictionary)
         """
 
         if not self.session_id:
