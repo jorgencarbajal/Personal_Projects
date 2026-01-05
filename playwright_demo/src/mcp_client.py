@@ -179,6 +179,8 @@ class SessionMCPClient:
     
     def complete_initialization(self):
         """
+        Complete MCP initialization handshake.
+
         - Establish the session
         - Send initialized notification to confirm readiness
         - Check for the available tools
@@ -208,17 +210,27 @@ class SessionMCPClient:
         return False
     
     def send_tool_call(self, tool_name, parameters=None):
-        """Send a tool call"""
+        """
+        Call an MCP tool with given parameters.
+
+        - Check for active session
+        - Build tool call parameters
+        - Send request and return response
+        """
+
         if not self.session_id:
             print("❌ No active session. Initialize first.")
             return None
         
+        # Build params dict with tool name
         params = {
             "name": tool_name
         }
+        # Add arguments to params if provided
         if parameters:
             params["arguments"] = parameters
         
+        # Send tool call request and return response dictionary
         return self._send_request("tools/call", params)
     
     def close(self):
